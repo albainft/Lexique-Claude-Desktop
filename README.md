@@ -4,6 +4,11 @@ Page de lexique autonome : une fiche par mot, avec sa version anglaise, sa caté
 
 La page `docs/index.html` est autonome (recherche, filtres par catégorie, lien direct vers un mot par `#mot`). Elle se publie telle quelle avec GitHub Pages (branche `main`, dossier `/docs`).
 
+## Aperçu
+![Lexique, affichage large](images/accueil-large.png)
+
+![Lexique, affichage étroit](images/accueil.png)
+
 ## Catégories
 Les catégories se déclarent dans `lexique.md`, sous `# Catégories`, une ligne `- nom: description` chacune. Leur ordre fixe l'ordre des boutons de filtre ; la description s'affiche au survol. Une fiche ne peut utiliser qu'une catégorie déclarée.
 
