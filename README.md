@@ -16,5 +16,8 @@ Les catégories se déclarent dans `lexique.md`, sous `# Catégories`, une ligne
 1. Éditer `lexique.md` : une section `## Mot` avec les champs `anglais`, `catégorie`, `définition`, et `voir` (facultatif, uniquement des mots existants).
 2. Régénérer la page : `python3 gen_lexique.py` (`--check` vérifie sans écrire).
 
+## Réalisation
+L'intégralité de ce projet (page, générateur, lexique d'exemple, README) a été réalisée avec Claude Code, et la page est publiée comme artefact dans Claude Desktop.
+
 ## Licence
 MIT, voir `LICENSE`.
