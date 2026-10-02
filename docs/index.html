@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lexique</title>
+<style>
+  /* Panneau étroit, une fiche par mot, lien direct par #mot. Mêmes couleurs que lexique.tmpl. */
+  :root { --bg:#fbfaf7; --fg:#1f1d1a; --muted:#6b675f; --line:#e2ded4; --card:#ffffff; --accent:#c4552d; --on-accent:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#1b1a18; --fg:#ece9e2; --muted:#9a958a; --line:#37342f; --card:#242220; --accent:#e8794f; --on-accent:#1b1a18; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg:#1b1a18; --fg:#ece9e2; --muted:#9a958a; --line:#37342f; --card:#242220; --accent:#e8794f; --on-accent:#1b1a18; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:640px; margin:0 auto; padding-inline:16px; padding-block:16px 32px; }
+  h1 { font-size:18px; margin:0 0 2px; text-wrap:balance; }
+  .note { color:var(--accent); font-size:12px; margin:0 0 12px; }
+  input { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); font:inherit; }
+  input:focus-visible, .chip:focus-visible, .see a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 14px; }
+  .chip { border:1px solid var(--line); background:var(--card); color:var(--fg); padding:4px 10px; border-radius:999px; font:inherit; font-size:13px; cursor:pointer; }
+  .chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .term { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; min-width:0; overflow-wrap:anywhere; }
+  .term.hl { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .term b { font-size:15px; }
+  .en { margin-left:8px; font-size:13px; color:var(--muted); font-style:italic; }
+  .cat { float:right; font-size:11px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
+  .def { margin:2px 0 0; }
+  .here, .see { margin:4px 0 0; font-size:13px; color:var(--muted); }
+  .see a { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(--accent); }
+  .empty { color:var(--muted); padding:20px 0; text-align:center; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lexique</h1>
+  <p class="note" id="note"></p>
+  <input id="q" type="search" placeholder="Rechercher (français ou anglais)…" autocomplete="off" aria-label="Rechercher un terme">
+  <div class="chips" id="chips"></div>
+  <div id="list"></div>
+</main>
+<script>
+const TERMS = [{"t": "Docker", "e": "Docker", "c": "infra", "d": "Moteur qui fait tourner chaque service dans un conteneur isolé.", "v": ["conteneur"], "id": "docker"}, {"t": "Conteneur", "e": "container", "c": "infra", "d": "Instance isolée d'un service, créée depuis une image.", "v": ["docker"], "id": "conteneur"}, {"t": "Proxy inverse", "e": "reverse proxy", "c": "infra", "d": "Point d'entrée unique qui redirige chaque nom de domaine vers le bon service.", "v": [], "id": "proxy-inverse"}, {"t": "Git", "e": "git", "c": "technique", "d": "Gestion de versions du code.", "v": ["commit"], "id": "git"}, {"t": "Commit", "e": "commit", "c": "technique", "d": "Enregistrement d'un lot de modifications dans l'historique git, avec un message qui dit ce qui a changé.", "v": ["git"], "id": "commit"}, {"t": "Secret", "e": "secret", "c": "sécurité", "d": "Mot de passe, clé ou jeton qui ne doit jamais apparaître en clair dans un fichier ou une commande.", "v": [], "id": "secret"}];
+document.getElementById("note").textContent = "Exemple de lexique : remplacez ces fiches par vos propres mots.";
+const byId = Object.fromEntries(TERMS.map(x => [x.id, x]));
+const CATS = [{"n": "infra", "d": "Machines, conteneurs et services"}, {"n": "technique", "d": "Outils et notions générales"}, {"n": "sécurité", "d": "Secrets et protection des accès"}];
+const cats = [{ n: "toutes", d: "" }, ...CATS];
+let cat = "toutes";
+const $q = document.getElementById("q"), $list = document.getElementById("list"), $chips = document.getElementById("chips");
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+function card(x) {
+  const el = document.createElement("div"); el.className = "term"; el.id = x.id;
+  el.innerHTML = '<span class="cat"></span><b></b><span class="en"></span><p class="def"></p><p class="here"></p><p class="see"></p>';
+  el.querySelector(".cat").textContent = x.c;
+  el.querySelector("b").textContent = x.t;
+  el.querySelector(".en").textContent = "EN : " + x.e;
+  el.querySelector(".def").textContent = x.d;
+  const here = el.querySelector(".here");
+  if (x.h) here.textContent = "Chez vous : " + x.h; else here.remove();
+  const see = el.querySelector(".see");
+  if (!x.v.length) see.remove();
+  else {
+    see.append("Voir aussi : ");
+    x.v.forEach((id, i) => {
+      const a = document.createElement("a"); a.href = "#" + id; a.textContent = byId[id].t;
+      a.onclick = e => { e.preventDefault(); show(id); };
+      see.append(i ? ", " : "", a);
+    });
+  }
+  return el;
+}
+function draw() {
+  const n = norm($q.value.trim());
+  const rows = TERMS.filter(x => (cat === "toutes" || x.c === cat) && (!n || norm(x.t + " " + x.e + " " + x.d).includes(n)));
+  $list.innerHTML = rows.length ? "" : '<div class="empty">Aucun terme.</div>';
+  rows.forEach(x => $list.appendChild(card(x)));
+}
+function pick(c) {
+  cat = c;
+  [...$chips.children].forEach(k => k.setAttribute("aria-pressed", k.textContent === c));
+  draw();
+}
+function show(id) {
+  if (!byId[id]) return;
+  $q.value = ""; pick("toutes");
+  document.querySelectorAll(".term.hl").forEach(e => e.classList.remove("hl"));
+  const el = document.getElementById(id);
+  el.classList.add("hl"); el.scrollIntoView({ block: "center" });
+}
+cats.forEach(c => {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = c.n; if (c.d) b.title = c.d;
+  b.setAttribute("aria-pressed", c.n === cat); b.onclick = () => pick(c.n);
+  $chips.appendChild(b);
+});
+$q.addEventListener("input", draw);
+const fromHash = () => decodeURIComponent(location.hash.slice(1));
+window.addEventListener("hashchange", () => show(fromHash()));
+draw();
+show(fromHash());
+</script>
+</body>
+</html>
